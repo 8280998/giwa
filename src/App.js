@@ -100,14 +100,14 @@ const ERC20_ABI = [
 
 // Hardcoded values
 const RPC_URL = "https://sepolia-rpc.giwa.io";
-const CHAIN_ID = 0x164ce;
-const CONTRACT_ADDRESS = "0xd081Ae7bA1Ee5e872690F2cC26dfa588531eA628";
-const TOKEN_ADDRESS = "0xF7C90D79a1c2EA9c9028704E1Bd1FCC3619b5a37";
-const CLAIM_CONTRACT_ADDRESS = "0xfcBA9b0ABc504bCBb89F0771833c57F17FDbdd42";
+const CHAIN_ID = 91342;
+const CONTRACT_ADDRESS = "0xf6B87F9864B29EdBC731e2f826D0378F7c0eE323";
+const TOKEN_ADDRESS = "0x772dE654725053537C5D18F2367BdfE2A12E0053";
+const CLAIM_CONTRACT_ADDRESS = "0xf931b1dAFdebC98b5cBdF5EC5fE043e81CDf8559";
 const EXPLORER_URL = "https://sepolia-explorer.giwa.io";
 const COOLDOWN = 1; // seconds
 const BLOCK_WAIT_TIME = 2; // seconds
-const MONAD_CHAIN_ID_HEX = "0x279F"; // 10143 in hex
+const GIWA_CHAIN_ID_HEX = "0x164ce"; // 91342 in hex
 
 const CLAIM_ABI = [
   {
@@ -140,7 +140,7 @@ const App = () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        domain: 'monad-bet-game.vercel.app',
+        domain: 'giwagame.vercel.app',
       })
     })
       .then(res => res.json())
@@ -161,13 +161,13 @@ const App = () => {
     const handleChainChanged = async (chainId) => {
       const newChainId = parseInt(chainId, 16); // Hex to decimal
       if (newChainId === CHAIN_ID) {
-        addLog({type: 'simple', message: "Network switched to Monad Testnet."});
+        addLog({type: 'simple', message: "Network switched to GIWA Testnet."});
         if (account) {
           updateBalance();
           updateContractBalance();
         }
       } else {
-        addLog({type: 'simple', message: "Switched to a different network. Please switch back to  Monad Testnet."});
+        addLog({type: 'simple', message: "Switched to a different network. Please switch back to  GIWA Testnet."});
       }
     };
 
@@ -233,12 +233,12 @@ const App = () => {
       const network = await newProvider.getNetwork();
 
       if (Number(network.chainId) !== CHAIN_ID) {
-        addLog({type: 'simple', message: `Detected wallet: ${walletName}. Switching to Monad Testnet...`});
+        addLog({type: 'simple', message: `Detected wallet: ${walletName}. Switching to GIWA Testnet...`});
         let switchSuccess = false;
         try {
           await ethereumProvider.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: MONAD_CHAIN_ID_HEX }],
+            params: [{ chainId: GIWA_CHAIN_ID_HEX }],
           });
           switchSuccess = true;
         } catch (switchError) {
@@ -247,18 +247,18 @@ const App = () => {
               await ethereumProvider.request({
                 method: 'wallet_addEthereumChain',
                 params: [{
-                  chainId: MONAD_CHAIN_ID_HEX,
+                  chainId: GIWA_CHAIN_ID_HEX,
                   chainName: '',
                   rpcUrls: [RPC_URL],
-                  nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
-                  blockExplorerUrls: ['https://testnet.monadexplorer.com/'],
+                  nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                  blockExplorerUrls: ['https://sepolia-explorer.giwa.io/'],
                 }],
               });
               addLog({type: 'simple', message: `Chain added to ${walletName}. Now switching...`});
               // After adding, try switching again
               await ethereumProvider.request({
                 method: 'wallet_switchEthereumChain',
-                params: [{ chainId: MONAD_CHAIN_ID_HEX }],
+                params: [{ chainId: GIWA_CHAIN_ID_HEX }],
               });
               switchSuccess = true;
             } catch (addError) {
@@ -276,12 +276,12 @@ const App = () => {
 
         const updatedNetwork = await newProvider.getNetwork();
         if (Number(updatedNetwork.chainId) !== CHAIN_ID) {
-          addLog({type: 'simple', message: `Failed to switch to MONAD in ${walletName}. Please switch manually.`});
-          addLog({type: 'simple', message: "Network details: Chain ID: 10143, RPC: https://testnet-rpc.monad.xyz, Symbol: MON, Explorer: https://testnet.monadexplorer.com"});
+          addLog({type: 'simple', message: `Failed to switch to GIWA in ${walletName}. Please switch manually.`});
+          addLog({type: 'simple', message: "Network details: Chain ID: 91342, RPC: https://sepolia-rpc.giwa.io, Symbol: ETH, Explorer: https://sepolia-explorer.giwa.io"});
           // Proceed with connection but warn
           addLog({type: 'simple', message: "Connected anyway. Please switch network manually in wallet to use the app fully."});
         } else {
-          addLog({type: 'simple', message: "Successfully switched to MONAD!"});
+          addLog({type: 'simple', message: "Successfully switched to GIWA!"});
         }
       }
 
@@ -311,7 +311,7 @@ const App = () => {
     try {
       const nativeBalance = await provider.getBalance(account);
       const nativeBalanceEth = ethers.formatEther(nativeBalance);
-      addLog({type: 'simple', message: `Current native balance: ${nativeBalanceEth} MON`});
+      addLog({type: 'simple', message: `Current native balance: ${nativeBalanceEth} ETH`});
 
       const claimContract = new ethers.Contract(CLAIM_CONTRACT_ADDRESS, CLAIM_ABI, signer);
       
@@ -321,10 +321,10 @@ const App = () => {
 
       const gasPrice = await provider.getFeeData();
       const estimatedFee = ethers.formatEther(estimatedGas * gasPrice.gasPrice);
-      addLog({type: 'simple', message: `Estimated gas fee: ~${estimatedFee} MON`});
+      addLog({type: 'simple', message: `Estimated gas fee: ~${estimatedFee} ETH`});
 
       if (parseFloat(nativeBalanceEth) < parseFloat(estimatedFee) * 1.2) { // 20% buffer
-        addLog({type: 'simple', message: `Insufficient native balance for gas. Need at least ~${(parseFloat(estimatedFee) * 1.2).toFixed(6)} MON`});
+        addLog({type: 'simple', message: `Insufficient native balance for gas. Need at least ~${(parseFloat(estimatedFee) * 1.2).toFixed(6)} ETH`});
         return;
       }
 
@@ -504,7 +504,7 @@ const App = () => {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>MONAD Betting Game</h1>
+        <h1>GIWA Game</h1>
         <p className="subtitle">Bet on the blockchain – Win big or go home!</p>
         <p className="visitor-count">Welcome, you are the {visitorCount}th visitor</p>
       </header>

@@ -141,7 +141,7 @@ const App = () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        domain: 'giwagame.vercel.app'',
+        domain: 'giwagame.vercel.app',
       })
     })
       .then(res => res.json())
@@ -258,7 +258,7 @@ const App = () => {
                   chainName: 'GIWA',
                   rpcUrls: [RPC_URL],
                   nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-                  blockExplorerUrls: ['https://sepolia-explorer.giwa.io'],
+                  blockExplorerUrls: ['https://sepolia-explorer.giwa.io/'],
                 }],
               });
               addLog({type: 'simple', message: `Chain added to ${walletName}. Now switching...`});

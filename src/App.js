@@ -99,15 +99,15 @@ const ERC20_ABI = [
 ];
 
 // Hardcoded values
-const RPC_URL = "https://mainnet.base.org";
-const CHAIN_ID = 8453;
-const CONTRACT_ADDRESS = "0x64f82C34e8F0f023952977E3B74fc5370C425c34";
-const TOKEN_ADDRESS = "0xaF0a8E5465D04Ec8e2F67028dD7BC04903F1E36a";
-const CLAIM_CONTRACT_ADDRESS = "0xc3C033bb090a341330d5b30DAA80B9Deb1F6d120";
-const EXPLORER_URL = "https://basescan.org";
+const RPC_URL = "https://sepolia-rpc.giwa.io";
+const CHAIN_ID = 91342;
+const CONTRACT_ADDRESS = "0xf6B87F9864B29EdBC731e2f826D0378F7c0eE323";
+const TOKEN_ADDRESS = "0x772dE654725053537C5D18F2367BdfE2A12E0053";
+const CLAIM_CONTRACT_ADDRESS = "0xf931b1dAFdebC98b5cBdF5EC5fE043e81CDf8559";
+const EXPLORER_URL = "https://sepolia-explorer.giwa.io";
 const COOLDOWN = 1; // seconds
-const BLOCK_WAIT_TIME = 4; // 2 blocks
-const BASE_CHAIN_ID_HEX = "0x2105"; // 8453 in hex
+const BLOCK_WAIT_TIME = 2; // seconds
+const GIWA_CHAIN_ID_HEX = "0x164ce"; // 91342 in hex
 
 const CLAIM_ABI = [
   {
@@ -141,7 +141,7 @@ const App = () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        domain: 'basebetgame.vercel.app',
+        domain: 'giwagame.vercel.app'',
       })
     })
       .then(res => res.json())
@@ -162,13 +162,13 @@ const App = () => {
     const handleChainChanged = async (chainId) => {
       const newChainId = parseInt(chainId, 16); // Hex to decimal
       if (newChainId === CHAIN_ID) {
-        addLog({type: 'simple', message: "Network switched to Base."});
+        addLog({type: 'simple', message: "Network switched to GIWA."});
         if (account) {
           updateBalance();
           updateContractBalance();
         }
       } else {
-        addLog({type: 'simple', message: "Switched to a different network. Please switch back to Base."});
+        addLog({type: 'simple', message: "Switched to a different network. Please switch back to GIWA."});
       }
     };
 
@@ -240,12 +240,12 @@ const App = () => {
       const network = await newProvider.getNetwork();
 
       if (Number(network.chainId) !== CHAIN_ID) {
-        addLog({type: 'simple', message: `Detected wallet: ${walletName}. Switching to Base...`});
+        addLog({type: 'simple', message: `Detected wallet: ${walletName}. Switching to GIWA...`});
         let switchSuccess = false;
         try {
           await ethereumProvider.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: BASE_CHAIN_ID_HEX }],
+            params: [{ chainId: GIWA_CHAIN_ID_HEX }],
           });
           switchSuccess = true;
         } catch (switchError) {
@@ -254,18 +254,18 @@ const App = () => {
               await ethereumProvider.request({
                 method: 'wallet_addEthereumChain',
                 params: [{
-                  chainId: BASE_CHAIN_ID_HEX,
-                  chainName: 'Base',
+                  chainId: GIWA_CHAIN_ID_HEX,
+                  chainName: 'GIWA',
                   rpcUrls: [RPC_URL],
                   nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-                  blockExplorerUrls: ['https://basescan.org/'],
+                  blockExplorerUrls: ['https://sepolia-explorer.giwa.io'],
                 }],
               });
               addLog({type: 'simple', message: `Chain added to ${walletName}. Now switching...`});
               // After adding, try switching again
               await ethereumProvider.request({
                 method: 'wallet_switchEthereumChain',
-                params: [{ chainId: BASE_CHAIN_ID_HEX }],
+                params: [{ chainId: GIWA_CHAIN_ID_HEX }],
               });
               switchSuccess = true;
             } catch (addError) {
@@ -283,12 +283,12 @@ const App = () => {
 
         const updatedNetwork = await newProvider.getNetwork();
         if (Number(updatedNetwork.chainId) !== CHAIN_ID) {
-          addLog({type: 'simple', message: `Failed to switch to Base in ${walletName}. Please switch manually.`});
-          addLog({type: 'simple', message: "Network details: Chain ID: 8453, RPC: https://mainnet.base.org, Symbol: ETH, Explorer: https://basescan.org"});
+          addLog({type: 'simple', message: `Failed to switch to GIWA in ${walletName}. Please switch manually.`});
+          addLog({type: 'simple', message: "Network details: Chain ID: 91342, RPC: https://sepolia-rpc.giwa.io, Symbol: ETH, Explorer: https://sepolia-explorer.giwa.io"});
           // Proceed with connection but warn
           addLog({type: 'simple', message: "Connected anyway. Please switch network manually in wallet to use the app fully."});
         } else {
-          addLog({type: 'simple', message: "Successfully switched to Base!"});
+          addLog({type: 'simple', message: "Successfully switched to GIWA!"});
         }
       }
 
@@ -540,7 +540,7 @@ const App = () => {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>Base Betting Game</h1>
+        <h1>GIWA Game</h1>
         <p className="subtitle">Bet on the blockchain – Win big or go home!</p>
         <p className="visitor-count">Welcome, you are the {visitorCount}th visitor</p>
       </header>

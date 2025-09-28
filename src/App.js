@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Modal from 'react-modal';
 import { ethers } from 'ethers';
 import './App.css'; // Import the CSS for styling
@@ -99,15 +99,15 @@ const ERC20_ABI = [
 ];
 
 // Hardcoded values
-const RPC_URL = "https://sepolia-rpc.giwa.io";
-const CHAIN_ID = 91342;
-const CONTRACT_ADDRESS = "0xf6B87F9864B29EdBC731e2f826D0378F7c0eE323";
-const TOKEN_ADDRESS = "0x772dE654725053537C5D18F2367BdfE2A12E0053";
-const CLAIM_CONTRACT_ADDRESS = "0xf931b1dAFdebC98b5cBdF5EC5fE043e81CDf8559";
-const EXPLORER_URL = "https://sepolia-explorer.giwa.io";
+const RPC_URL = "https://mainnet.base.org";
+const CHAIN_ID = 8453;
+const CONTRACT_ADDRESS = "0x64f82C34e8F0f023952977E3B74fc5370C425c34";
+const TOKEN_ADDRESS = "0xaF0a8E5465D04Ec8e2F67028dD7BC04903F1E36a";
+const CLAIM_CONTRACT_ADDRESS = "0xc3C033bb090a341330d5b30DAA80B9Deb1F6d120";
+const EXPLORER_URL = "https://basescan.org";
 const COOLDOWN = 1; // seconds
-const BLOCK_WAIT_TIME = 2; // seconds
-const GIWA_CHAIN_ID_HEX = "0x164ce"; // 91342 in hex
+const BLOCK_WAIT_TIME = 4; // 2 blocks
+const BASE_CHAIN_ID_HEX = "0x2105"; // 8453 in hex
 
 const CLAIM_ABI = [
   {
@@ -131,16 +131,17 @@ const App = () => {
   const [contractBalance, setContractBalance] = useState(0);
   const [logs, setLogs] = useState([]);
   const [isBetting, setIsBetting] = useState(false);
-  const [stopRequested, setStopRequested] = useState(false);
+  const stopRequestedRef = useRef(false);
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [visitorCount, setVisitorCount] = useState('?');
+  const logsContainerRef = useRef(null);
 
   useEffect(() => {
     fetch('https://visitor.6developer.com/visit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        domain: 'giwagame.vercel.app',
+        domain: 'basebetgame.vercel.app',
       })
     })
       .then(res => res.json())
@@ -161,13 +162,13 @@ const App = () => {
     const handleChainChanged = async (chainId) => {
       const newChainId = parseInt(chainId, 16); // Hex to decimal
       if (newChainId === CHAIN_ID) {
-        addLog({type: 'simple', message: "Network switched to GIWA Testnet."});
+        addLog({type: 'simple', message: "Network switched to Base."});
         if (account) {
           updateBalance();
           updateContractBalance();
         }
       } else {
-        addLog({type: 'simple', message: "Switched to a different network. Please switch back to  GIWA Testnet."});
+        addLog({type: 'simple', message: "Switched to a different network. Please switch back to Base."});
       }
     };
 
@@ -194,6 +195,12 @@ const App = () => {
       provider.provider.removeListener('accountsChanged', handleAccountsChanged);
     };
   }, [provider, account]);
+
+  useEffect(() => {
+    if (logsContainerRef.current) {
+      logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+    }
+  }, [logs]);
 
   const addLog = (logEntry) => {
     setLogs(prev => [...prev, logEntry]);
@@ -233,12 +240,12 @@ const App = () => {
       const network = await newProvider.getNetwork();
 
       if (Number(network.chainId) !== CHAIN_ID) {
-        addLog({type: 'simple', message: `Detected wallet: ${walletName}. Switching to GIWA Testnet...`});
+        addLog({type: 'simple', message: `Detected wallet: ${walletName}. Switching to Base...`});
         let switchSuccess = false;
         try {
           await ethereumProvider.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: GIWA_CHAIN_ID_HEX }],
+            params: [{ chainId: BASE_CHAIN_ID_HEX }],
           });
           switchSuccess = true;
         } catch (switchError) {
@@ -247,18 +254,18 @@ const App = () => {
               await ethereumProvider.request({
                 method: 'wallet_addEthereumChain',
                 params: [{
-                  chainId: GIWA_CHAIN_ID_HEX,
-                  chainName: '',
+                  chainId: BASE_CHAIN_ID_HEX,
+                  chainName: 'Base',
                   rpcUrls: [RPC_URL],
                   nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-                  blockExplorerUrls: ['https://sepolia-explorer.giwa.io/'],
+                  blockExplorerUrls: ['https://basescan.org/'],
                 }],
               });
               addLog({type: 'simple', message: `Chain added to ${walletName}. Now switching...`});
               // After adding, try switching again
               await ethereumProvider.request({
                 method: 'wallet_switchEthereumChain',
-                params: [{ chainId: GIWA_CHAIN_ID_HEX }],
+                params: [{ chainId: BASE_CHAIN_ID_HEX }],
               });
               switchSuccess = true;
             } catch (addError) {
@@ -276,12 +283,12 @@ const App = () => {
 
         const updatedNetwork = await newProvider.getNetwork();
         if (Number(updatedNetwork.chainId) !== CHAIN_ID) {
-          addLog({type: 'simple', message: `Failed to switch to GIWA in ${walletName}. Please switch manually.`});
-          addLog({type: 'simple', message: "Network details: Chain ID: 91342, RPC: https://sepolia-rpc.giwa.io, Symbol: ETH, Explorer: https://sepolia-explorer.giwa.io"});
+          addLog({type: 'simple', message: `Failed to switch to Base in ${walletName}. Please switch manually.`});
+          addLog({type: 'simple', message: "Network details: Chain ID: 8453, RPC: https://mainnet.base.org, Symbol: ETH, Explorer: https://basescan.org"});
           // Proceed with connection but warn
           addLog({type: 'simple', message: "Connected anyway. Please switch network manually in wallet to use the app fully."});
         } else {
-          addLog({type: 'simple', message: "Successfully switched to GIWA!"});
+          addLog({type: 'simple', message: "Successfully switched to Base!"});
         }
       }
 
@@ -330,7 +337,7 @@ const App = () => {
 
       const tx = await claimContract.claim({ gasLimit });
       addLog({type: 'tx', message: `Claiming tokens... Tx: `, txHash: tx.hash});
-      const receipt = await tx.wait(2);  // 2 blocks
+      const receipt = await tx.wait(2);
       addLog({type: 'simple', message: `Claim confirmed! Block: ${receipt.blockNumber}, Gas used: ${receipt.gasUsed}, Fee: ${ethers.formatEther(receipt.gasUsed * receipt.gasPrice)} ETH`});
       
       // Force balance update after claim with delay for RPC sync
@@ -339,12 +346,9 @@ const App = () => {
         updateContractBalance();
       }, 2000);
     } catch (error) {
-      addLog({type: 'simple', message: `Claim failed: ${error.message}`});
+      addLog({type: 'simple', message: `Claim failed`});
       if (error.reason) {
         addLog({type: 'simple', message: `Error reason: ${error.reason}`});
-      }
-      if (error.data) {
-        addLog({type: 'simple', message: `Error data: ${error.data}`});
       }
     }
   };
@@ -379,13 +383,30 @@ const App = () => {
         const gasLimit = estimatedGas * 120n / 100n;
         const tx = await tokenContract.approve(contractAddr, ethers.MaxUint256, { gasLimit });
         addLog({type: 'tx', message: `Approving tokens... Tx: `, txHash: tx.hash});
-        await tx.wait(2);  // 2 blocks
+        await tx.wait(2);
         addLog({type: 'simple', message: `Approval confirmed.`});
       }
     } catch (error) {
       addLog({type: 'simple', message: `Approval failed: ${error.message}`});
       throw error;
     }
+  };
+
+  const betIteration = async (contract, tokenContract, i) => {
+    if (stopRequestedRef.current) {
+      addLog({type: 'simple', message: 'Betting stopped by user.'});
+      return false;
+    }
+
+    const currentGuess = mode === '1' ? guess : '0123456789abcdef'.charAt(Math.floor(Math.random() * 16));
+    addLog({type: 'simple', message: `Attempting bet ${i+1}/${numBets} with guess ${currentGuess}`});
+    const { betId } = await placeBet(contract, currentGuess);
+    await new Promise(resolve => setTimeout(resolve, BLOCK_WAIT_TIME * 1000));
+    await resolveBet(contract, betId);
+    await new Promise(resolve => setTimeout(resolve, COOLDOWN * 1000));
+    updateBalance();
+    updateContractBalance();
+    return true;
   };
 
   const placeBet = async (contract, currentGuess, retryCount = 0) => {
@@ -414,7 +435,7 @@ const App = () => {
     } catch (error) {
       if (error.message.includes('Insufficient allowance') && retryCount < 1) {
         addLog({type: 'simple', message: `Allowance sync delay detected, retrying bet...`});
-        await new Promise(resolve => setTimeout(resolve, 2000));  // 2s
+        await new Promise(resolve => setTimeout(resolve, 2000));
         return placeBet(contract, currentGuess, retryCount + 1);
       }
       addLog({type: 'simple', message: `Place bet failed: ${error.message}`});
@@ -422,26 +443,44 @@ const App = () => {
     }
   };
 
-  const resolveBet = async (contract, betId) => {
+  const resolveBet = async (contract, betId, retryCount = 0) => {
     try {
+      const bet = await contract.getBet(BigInt(betId));
+      const betBlock = Number(bet[6]);  // bet blockNumber
+      const currentBlock = await provider.getBlockNumber();
+      const blocksDiff = currentBlock - betBlock;
+      addLog({type: 'simple', message: `Checking blocks: Bet at ${betBlock}, Current ${currentBlock}, Diff: ${blocksDiff}`});
+
+      if (blocksDiff < 2) {
+        const waitTime = (2 - blocksDiff) * 2 * 1000;
+        addLog({type: 'simple', message: `Waiting extra ${waitTime / 1000}s for 2 blocks confirmation...`});
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+
       const estimatedGas = await contract.resolveBet.estimateGas(BigInt(betId));
       const gasLimit = estimatedGas * 120n / 100n;
       const tx = await contract.resolveBet(BigInt(betId), { gasLimit });
       const receipt = await tx.wait();
-      const bet = await contract.getBet(BigInt(betId));
-      const won = bet[4];
-      const reward = ethers.formatEther(bet[5]);
-      const blockNumber = bet[6].toString();
+      const resolvedBet = await contract.getBet(BigInt(betId));
+      const won = resolvedBet[4];
+      const reward = ethers.formatEther(resolvedBet[5]);
+      const blockNumber = resolvedBet[6].toString();
       const block = await provider.getBlock(Number(blockNumber));
-      const targetByte = String.fromCharCode(bet[3]);
+      const targetByte = String.fromCharCode(resolvedBet[3]);
       addLog({type: 'blockInfo', blockNumber, blockHash: block.hash, targetByte});
       if (won) {
         addLog({type: 'result', won: true, reward, txHash: tx.hash, betId});
       } else {
         addLog({type: 'result', won: false, betId});
       }
-      return { bet, txHash: tx.hash };
+      return { bet: resolvedBet, txHash: tx.hash };
     } catch (error) {
+      if (error.message.includes('Wait for at least 2 blocks') && retryCount < 2) {
+        const waitTime = 2000;
+        addLog({type: 'simple', message: `Block wait required, retrying in ${waitTime / 1000}s...`});
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        return resolveBet(contract, betId, retryCount + 1);
+      }
       addLog({type: 'simple', message: `Resolve failed: ${error.message}`});
       throw error;
     }
@@ -457,7 +496,7 @@ const App = () => {
       return;
     }
     setIsBetting(true);
-    setStopRequested(false);
+    stopRequestedRef.current = false;
     try {
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
       const tokenContract = new ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
@@ -475,25 +514,22 @@ const App = () => {
       }
 
       for (let i = 0; i < numBets; i++) {
-        if (stopRequested) break;
-        const currentGuess = mode === '1' ? guess : '0123456789abcdef'.charAt(Math.floor(Math.random() * 16));
-        addLog({type: 'simple', message: `Attempting bet ${i+1}/${numBets} with guess ${currentGuess}`});
-        const { betId } = await placeBet(contract, currentGuess);
-        await new Promise(resolve => setTimeout(resolve, BLOCK_WAIT_TIME * 1000));
-        await resolveBet(contract, betId);
-        await new Promise(resolve => setTimeout(resolve, COOLDOWN * 1000));
-        updateBalance();
-        updateContractBalance();
+        if (stopRequestedRef.current) {
+          addLog({type: 'simple', message: 'Betting stopped by user.'});
+          break;
+        }
+        await betIteration(contract, tokenContract, i);
       }
     } catch (error) {
       addLog({type: 'simple', message: `Betting process error: ${error.message}`});
     } finally {
       setIsBetting(false);
+      stopRequestedRef.current = false;
     }
   };
 
   const stopBetting = () => {
-    setStopRequested(true);
+    stopRequestedRef.current = true;
     addLog({type: 'simple', message: "Stopping betting..."});
   };
 
@@ -504,7 +540,7 @@ const App = () => {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>GIWA Game</h1>
+        <h1>Base Betting Game</h1>
         <p className="subtitle">Bet on the blockchain – Win big or go home!</p>
         <p className="visitor-count">Welcome, you are the {visitorCount}th visitor</p>
       </header>
@@ -521,7 +557,7 @@ const App = () => {
       </div>
       {account && (
         <div className="account-info">
-          <p>Account: {shortenHash(account)}    Balance: {balance} GTK</p>
+          <p>Account: {shortenHash(account)  } Balance: {balance} GTK</p>
         </div>
       )}
       <div className="button-group">
@@ -607,7 +643,7 @@ const App = () => {
 
       <div className="logs-section">
         <h2>Bet Logs</h2>
-        <div className="logs-container">
+        <div className="logs-container" ref={logsContainerRef}>
           {logs.map((log, i) => {
             if (log.type === 'simple') {
               return (
@@ -646,7 +682,7 @@ const App = () => {
                     {log.blockNumber}
                   </a>
                   Hash: 
-                  <a href={`${EXPLORER_URL}/block/${log.blockNumber}`} target="_blank" rel="noopener noreferrer" className="tx-link">
+                  <a href={`${EXPLORER_URL}/block/${log.blockHash}`} target="_blank" rel="noopener noreferrer" className="tx-link">
                     {shortenHash(log.blockHash)}
                   </a>, Target Byte: {log.targetByte}
                 </p>
